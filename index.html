@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Expense Tracker</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+    h2 { margin-top: 1.5rem; }
+    form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: .5rem; }
+    #search-form { display: flex; gap: .5rem; }
+    input, button { padding: .5rem; font-size: 1rem; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #ddd; }
+    #total { font-size: 1.25rem; font-weight: bold; margin: 1rem 0; }
+    .error { color: #b00020; min-height: 1.2rem; margin: .5rem 0; }
+    #search-result { margin-top: .5rem; }
+  </style>
+</head>
+<body>
+  <h1>Expense Tracker</h1>
+
+  <h2>Add Expense</h2>
+  <form id="form">
+    <input name="description" placeholder="Description" required>
+    <input name="category" placeholder="Category" required>
+    <input name="amount" type="number" step="0.01" placeholder="Amount" required>
+    <input name="date" type="date">
+    <button type="submit">Add</button>
+  </form>
+  <div id="error" class="error"></div>
+
+  <h2>Find Expense by ID</h2>
+  <form id="search-form">
+    <input id="search-id" type="number" min="1" placeholder="Expense ID" required>
+    <button type="submit">Search</button>
+    <button type="button" id="clear-search">Clear</button>
+  </form>
+  <div id="search-error" class="error"></div>
+  <table id="search-result" hidden>
+    <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+    <tbody id="search-rows"></tbody>
+  </table>
+
+  <h2>All Expenses</h2>
+  <div id="total">Total: 0.00</div>
+  <table>
+    <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script>
+    const rows = document.getElementById('rows');
+    const totalEl = document.getElementById('total');
+    const errorEl = document.getElementById('error');
+    const searchError = document.getElementById('search-error');
+    const searchTable = document.getElementById('search-result');
+    const searchRows = document.getElementById('search-rows');
+
+    function buildRow(e) {
+      const tr = document.createElement('tr');
+      for (const v of [e.id, e.description, e.category, e.amount.toFixed(2), e.date]) {
+        const td = document.createElement('td');
+        td.textContent = v;
+        tr.appendChild(td);
+      }
+      const td = document.createElement('td');
+      const btn = document.createElement('button');
+      btn.textContent = 'Delete';
+      btn.onclick = () => deleteExpense(e.id);
+      td.appendChild(btn);
+      tr.appendChild(td);
+      return tr;
+    }
+
+    function render({ expenses, total }) {
+      rows.innerHTML = '';
+      expenses.forEach((e) => rows.appendChild(buildRow(e)));
+      totalEl.textContent = 'Total: ' + total.toFixed(2);
+    }
+
+    async function load() {
+      const res = await fetch('/api/expenses');
+      render(await res.json());
+    }
+
+    async function deleteExpense(id) {
+      const res = await fetch('/api/expenses/' + id, { method: 'DELETE' });
+      if (!res.ok) {
+        errorEl.textContent = (await res.json()).error;
+      }
+      clearSearch();
+      load();
+    }
+
+    function clearSearch() {
+      searchTable.hidden = true;
+      searchRows.innerHTML = '';
+      searchError.textContent = '';
+    }
+
+    document.getElementById('form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      errorEl.textContent = '';
+      const f = new FormData(ev.target);
+      const body = {
+        description: f.get('description'),
+        category: f.get('category'),
+        amount: f.get('amount'),
+      };
+      if (f.get('date')) body.date = f.get('date');
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        errorEl.textContent = (await res.json()).error;
+        return;
+      }
+      ev.target.reset();
+      load();
+    });
+
+    document.getElementById('search-form').addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      clearSearch();
+      const id = document.getElementById('search-id').value.trim();
+      const res = await fetch('/api/expenses/' + encodeURIComponent(id));
+      const data = await res.json();
+      if (!res.ok) {
+        searchError.textContent = data.error;
+        return;
+      }
+      searchRows.appendChild(buildRow(data));
+      searchTable.hidden = false;
+    });
+
+    document.getElementById('clear-search').addEventListener('click', () => {
+      document.getElementById('search-id').value = '';
+      clearSearch();
+    });
+
+    load();
+  </script>
+</body>
+</html>
