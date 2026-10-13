@@ -8,7 +8,6 @@ const DATA_FILE = path.join(__dirname, 'data.json');
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---- data.json helpers (the API reads from and writes to this file) ----
 function readExpenses() {
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, '[]');
@@ -25,18 +24,15 @@ function writeExpenses(expenses) {
 const totalOf = (expenses) =>
   Math.round(expenses.reduce((sum, e) => sum + e.amount, 0) * 100) / 100;
 
-// Returns a positive integer id, or null if the param isn't one
 function parseId(value) {
   return /^\d+$/.test(value) ? Number(value) : null;
 }
 
-// GET /api/expenses -> all expenses + total of current expenses
 app.get('/api/expenses', (req, res) => {
   const expenses = readExpenses();
   res.status(200).json({ expenses, total: totalOf(expenses) });
 });
 
-// GET /api/expenses/:id -> one expense
 app.get('/api/expenses/:id', (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) return res.status(400).json({ error: 'id must be a number' });
@@ -46,7 +42,6 @@ app.get('/api/expenses/:id', (req, res) => {
   res.status(200).json(expense);
 });
 
-// POST /api/expenses -> insert (amount must be greater than 0)
 app.post('/api/expenses', (req, res) => {
   const { description, category, amount, date } = req.body || {};
 
@@ -84,7 +79,6 @@ app.post('/api/expenses', (req, res) => {
   res.status(201).json({ expense, total: totalOf(expenses) });
 });
 
-// DELETE /api/expenses/:id -> delete, returns updated total
 app.delete('/api/expenses/:id', (req, res) => {
   const id = parseId(req.params.id);
   if (id === null) return res.status(400).json({ error: 'id must be a number' });
@@ -98,12 +92,10 @@ app.delete('/api/expenses/:id', (req, res) => {
   res.status(200).json({ deleted, total: totalOf(expenses) });
 });
 
-// Unknown API routes (this also means PUT/PATCH are not available) -> JSON 404
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Unexpected errors (e.g. unreadable data.json or malformed JSON body) -> JSON
 app.use((err, req, res, next) => {
   const status = err.status || err.statusCode || 500;
   res.status(status).json({ error: status === 500 ? 'Internal server error' : err.message });

@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "id": 1,
+    "description": "clothes",
+    "category": "shirt",
+    "amount": 50,
+    "date": "2026-10-04"
+  },
+  {
+    "id": 2,
+    "description": "plumbing",
+    "category": "plumber",
+    "amount": 600,
+    "date": "2026-10-02"
+  },
+  {
+    "id": 3,
+    "description": "cloth",
+    "category": "table",
+    "amount": 50,
+    "date": "2026-10-09"
+  },
+  {
+    "id": 4,
+    "description": "dog food",
+    "category": "pets",
+    "amount": 400,
+    "date": "2026-10-02"
+  }
+]

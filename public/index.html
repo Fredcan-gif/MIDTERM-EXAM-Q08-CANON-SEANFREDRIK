@@ -4,21 +4,45 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Expense Tracker</title>
+
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h2 { margin-top: 1.5rem; }
-    form { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: .5rem; }
-    #search-form { display: flex; gap: .5rem; }
-    input, button { padding: .5rem; font-size: 1rem; }
+    body { font-family: sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1rem; color: #000; background: #fff; }
+    h1 { margin: 0; font-size: 1.75rem; }
+    h2 { margin: 1.5rem 0 .5rem; font-size: 1.1rem; }
+    .top { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+    .search h2 { margin: 0 0 .25rem; font-size: 1rem; }
+    .list-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1.5rem 0 .5rem; }
+    .list-head h2, #total { margin: 0; }
+    #total { font-size: 1.1rem; font-weight: bold; }
+    form { display: grid; grid-template-columns: 2fr 1.2fr 1fr minmax(11rem, 1.4fr) auto; gap: .5rem; }
+    #search-form { display: flex; }
+    #search-form input { width: 8rem; }
+    input, button { padding: .5rem; font-size: 1rem; font-family: inherit; color: #000; background: #fff; border: 1px solid #000; border-radius: 0; min-width: 0; }
+    button { cursor: pointer; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #ddd; }
-    #total { font-size: 1.25rem; font-weight: bold; margin: 1rem 0; }
-    .error { color: #b00020; min-height: 1.2rem; margin: .5rem 0; }
-    #search-result { margin-top: .5rem; }
+    th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #000; }
+    .error { min-height: 1.2rem; margin: .5rem 0; }
+    @media (max-width: 600px) { form:not(#search-form) { grid-template-columns: 1fr 1fr; } }
   </style>
+  
 </head>
 <body>
-  <h1>Expense Tracker</h1>
+  <header class="top">
+    <h1>Expense Tracker</h1>
+    <div class="search">
+      <h2>Find Expense by ID</h2>
+      <form id="search-form">
+        <input id="search-id" type="number" min="1" placeholder="Expense ID" required>
+        <button type="submit">Search</button>
+        <button type="button" id="clear-search">Clear</button>
+      </form>
+    </div>
+  </header>
+  <div id="search-error" class="error"></div>
+  <table id="search-result" hidden>
+    <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+    <tbody id="search-rows"></tbody>
+  </table>
 
   <h2>Add Expense</h2>
   <form id="form">
@@ -30,20 +54,10 @@
   </form>
   <div id="error" class="error"></div>
 
-  <h2>Find Expense by ID</h2>
-  <form id="search-form">
-    <input id="search-id" type="number" min="1" placeholder="Expense ID" required>
-    <button type="submit">Search</button>
-    <button type="button" id="clear-search">Clear</button>
-  </form>
-  <div id="search-error" class="error"></div>
-  <table id="search-result" hidden>
-    <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Amount</th><th>Date</th><th></th></tr></thead>
-    <tbody id="search-rows"></tbody>
-  </table>
-
-  <h2>All Expenses</h2>
-  <div id="total">Total: 0.00</div>
+  <div class="list-head">
+    <h2>All Expenses</h2>
+    <div id="total">Total: 0.00</div>
+  </div>
   <table>
     <thead><tr><th>ID</th><th>Description</th><th>Category</th><th>Amount</th><th>Date</th><th></th></tr></thead>
     <tbody id="rows"></tbody>
@@ -61,11 +75,19 @@
       const tr = document.createElement('tr');
       for (const v of [e.id, e.description, e.category, e.amount.toFixed(2), e.date]) {
         const td = document.createElement('td');
-        td.textContent = v;
+        if (v === e.category) {
+          const pill = document.createElement('span');
+          pill.className = 'pill';
+          pill.textContent = v;
+          td.appendChild(pill);
+        } else {
+          td.textContent = v;
+        }
         tr.appendChild(td);
       }
       const td = document.createElement('td');
       const btn = document.createElement('button');
+      btn.className = 'delete';
       btn.textContent = 'Delete';
       btn.onclick = () => deleteExpense(e.id);
       td.appendChild(btn);
